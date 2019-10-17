@@ -11,7 +11,7 @@ SELECT ....
 -- 1. Get the actor_id of the most popular actor (ie the actor who as been in the most films)
 
 SELECT actor_id, 
-COUNT(film_id) as most_films
+COUNT(*) as most_films
 FROM film_actor 
 GROUP BY actor_id ORDER BY most_films DESC 
 LIMIT 1;
@@ -19,11 +19,11 @@ LIMIT 1;
 -- 2. Using the answer from above (actor_id 107), get a list of all the films that
 -- actor has been in.
 
-SELECT f_a.actor_id, f.title
+SELECT f.film_id, f_a.actor_id
 FROM film as f
 JOIN film_actor as f_a 
 ON f.film_id = f_a.film_id
-WHERE actor_id = (107)
+WHERE actor_id = 107;
 
 
 -- 3. USING the list from the previous answer (going to have to use a CTE or subquery),
@@ -31,22 +31,25 @@ WHERE actor_id = (107)
 -- (ie all the actors that have acted with the most popular actor)
 -- BONUS: exclude the most popular actor from the list.
  
-WITH pop_actor_id AS (SELECT actor_id, 
-COUNT(film_id) as most_films
+WITH pop_actor AS (SELECT actor_id, 
+COUNT(*) as most_films
 FROM film_actor 
 GROUP BY actor_id ORDER BY most_films DESC 
 LIMIT 1),
 
-WITH pop_films AS (SELECT f_a.actor_id, f.title
+pop_films AS (SELECT f.film_id, f_a.actor_id
 FROM film as f
 JOIN film_actor as f_a 
 ON f.film_id = f_a.film_id
-WHERE f_a.actor_id = (107))
+WHERE f_a.actor_id = (SELECT actor_id FROM pop_actor)
+)
 
-SELECT CONCAT (first_name, " ", last_name) as full_name
-FROM actor as a
-JOIN film_actor as f_a 
-ON a.film_id = f_a.film_id
+SELECT DISTINCT f_a.actor_id, a.first_name ||' '|| a.last_name as full_name
+FROM film as f 
+    JOIN film_actor as f_a ON f.film_id = f_a.film_id
+    JOIN actor as a ON a.actor_id = f_a.actor_id
+WHERE f.film_id IN (SELECT film_id FROM pop_films) AND
+f_a.actor_id != (SELECT actor_id FROM pop_actor);
 
 
 
@@ -54,3 +57,4 @@ ON a.film_id = f_a.film_id
 -- 4. Can you do all of the above in one SQL execution (using multiple subqueries/CTE's)?
 -- Get all actors that have been in the same films as the most popular actor
 -- BONUS: exclude the most popular actor from the list.
+Same as ABOVE
